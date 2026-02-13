@@ -6,9 +6,9 @@ class Settings(BaseSettings):
 
     openai_api_key: str
     openai_model: str = "gpt-4o-mini"
-    
+
     allowed_origins: str
-    
+
     @property
     def allowed_origins_list(self) -> list[str]:
         """カンマ区切りの文字列をリストに変換する"""
