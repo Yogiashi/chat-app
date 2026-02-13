@@ -8,6 +8,10 @@ build:
 up:
 	docker compose up -d
 
+setup:
+	@make build
+	@make up
+
 # コンテナを起動
 start:
 	docker compose start
