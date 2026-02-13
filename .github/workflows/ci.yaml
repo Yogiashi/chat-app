@@ -1,0 +1,80 @@
+# ワークフローの名前（GitHub上で表示される）
+name: CI
+
+# いつこのワークフローを実行するか
+on:
+  push:
+    branches: [main]           # mainブランチにpushされたとき
+  pull_request:
+    branches: [main]           # mainブランチへのPull Requestが作られたとき
+
+# 実行するジョブ（タスク）の定義
+jobs:
+
+  # --- サーバー側のチェック ---
+  server-check:
+    # どの環境で実行するか
+    # GitHubが無料で提供するUbuntu Linuxマシンを使う
+    runs-on: ubuntu-latest
+
+    # このjob内のコマンドはすべてserverディレクトリで実行する
+    defaults:
+      run:
+        working-directory: server
+
+    # ステップ（手順）を上から順に実行する
+    steps:
+      # ① リポジトリのコードをチェックアウト（ダウンロード）する
+      # これがないとGitHub Actionsの実行環境にコードが存在しない
+      - uses: actions/checkout@v4
+
+      # ② uvをインストールする
+      # GitHub Actions用の公式アクションが用意されている
+      - uses: astral-sh/setup-uv@v5
+
+      # ③ Pythonをセットアップする
+      # uv が pyproject.toml の requires-python を見て適切なバージョンを選ぶ
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: server/pyproject.toml
+
+      # ④ 依存パッケージをインストール（開発用パッケージも含む）
+      - name: Install dependencies
+        run: uv sync
+
+      # ⑤ Ruffでコードの品質チェック
+      - name: Lint with Ruff
+        run: uv run ruff check .
+
+      # ⑥ Ruffでコードのフォーマットチェック
+      # --check：修正はせず、問題があるかだけ確認する
+      - name: Format check with Ruff
+        run: uv run ruff format --check .
+
+  # --- フロント側のチェック ---
+  front-check:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: front
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node.jsをセットアップ
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # 依存パッケージをインストール
+      # npm ci は npm install の厳密版
+      # package-lock.json の内容を「完全に再現」する（uv sync --frozen と同じ発想）
+      # npm install だと lock ファイルを無視して新しいバージョンが入ることがある
+      - name: Install dependencies
+        run: npm ci
+
+      # TypeScriptの型チェック
+      # --noEmit：JSファイルを出力せず、型エラーがないかだけ確認する
+      - name: Type check
+        run: npx tsc --noEmit
