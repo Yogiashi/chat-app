@@ -1,0 +1,30 @@
+services:
+  server:
+    build:
+      context: ./server
+        # 「server/ディレクトリをビルド対象にする」
+        # この中のDockerfileが使われる
+    ports:
+      - "8000:8000"
+        # ホストの8000番ポート → コンテナの8000番ポートに転送
+        # これでブラウザから localhost:8000 でアクセスできる
+    volumes:
+      - ./server:/app
+        # ホストのserver/とコンテナの/appを同期する
+        # エディタでコードを変えると即座にコンテナに反映される
+        # --reload と組み合わせて、保存するだけで再起動される
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+        # Pythonが.pycファイル（キャッシュ）を作らないようにする
+        # コンテナ内を綺麗に保つため
+
+  front:
+    build:
+      context: ./front
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./front:/app # ホストのfront/とコンテナの/appを同期
+      - /app/node_modules
+    depends_on:
+      - server
