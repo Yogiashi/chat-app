@@ -71,6 +71,36 @@ clean:
 prune:
 	docker system prune -f
 
+# --- コード品質 ---
+
+# サーバーのコードをフォーマット（自動整形）
+format-server:
+	cd server && uv run ruff format .
+	cd server && uv run ruff check --fix .
+
+# フロントのコードをフォーマット
+format-front:
+	cd front && npx prettier --write "src/**/*.{ts,tsx,css}"
+
+# 両方まとめてフォーマット
+format:
+	@make format-server
+	@make format-front
+
+# サーバーのLintチェック（修正はしない、確認だけ）
+lint-server:
+	cd server && uv run ruff check .
+	cd server && uv run ruff format --check .
+
+# フロントのLintチェック
+lint-front:
+	cd front && npx tsc --noEmit
+
+# 両方まとめてチェック
+lint:
+	@make lint-server
+	@make lint-front
+
 # --- ヘルプ ---
 
 # コマンド一覧を表示

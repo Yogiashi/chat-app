@@ -4,6 +4,8 @@ services:
       context: ./server
         # 「server/ディレクトリをビルド対象にする」
         # この中のDockerfileが使われる
+    env_file:
+      - .env
     ports:
       - "8000:8000"
         # ホストの8000番ポート → コンテナの8000番ポートに転送
@@ -21,6 +23,8 @@ services:
   front:
     build:
       context: ./front
+    env_file:
+      - .env
     ports:
       - "5173:5173"
     volumes:
