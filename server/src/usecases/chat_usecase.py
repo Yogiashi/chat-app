@@ -1,5 +1,10 @@
 from collections.abc import AsyncGenerator
+import uuid
 
+from src.repositories.conversation_repository import (
+    ConversationRepository,
+    MessageRepository,
+)
 from src.schemas.request.chat_request import ChatRequest
 from src.services.openai_service import OpenAIService
 
@@ -7,26 +12,97 @@ from src.services.openai_service import OpenAIService
 class ChatUsecase:
     """チャット機能のビジネスロジック
 
-    今後ここに追加されるもの：
-    - 会話履歴のDB保存（repository を __init__ で受け取る）
-    - 入力のフィルタリング・バリデーション
-    - トークン数の計算と制限
-    - システムプロンプトの付与
+    Phase 2 との違い：
+    - repository を受け取って、会話とメッセージをDBに保存する
+    - conversation_id で既存の会話に追加できる
     """
 
-    def __init__(self, openai_service: OpenAIService) -> None:
+    def __init__(
+        self,
+        openai_service: OpenAIService,
+        conversation_repo: ConversationRepository,
+        message_repo: MessageRepository,
+    ) -> None:
         self._openai_service = openai_service
+        self._conversation_repo = conversation_repo
+        self._message_repo = message_repo
 
-    async def handle(self, request: ChatRequest) -> str:
-        """通常のチャット処理"""
+    async def handle(self, request: ChatRequest) -> tuple[str, uuid.UUID]:
+        """通常のチャット処理
+
+        Returns:
+            (GPTの応答テキスト, 会話ID) のタプル
+        """
+        # 会話の取得 or 作成
+        conversation_id = await self._get_or_create_conversation(request)
+
+        # ユーザーメッセージをDBに保存
+        last_user_message = request.messages[-1]
+        await self._message_repo.create(
+            conversation_id=conversation_id,
+            role=last_user_message.role,
+            content=last_user_message.content,
+        )
+
+        # OpenAI APIに送信
         messages = [m.model_dump() for m in request.messages]
-        return await self._openai_service.get_response(messages)
+        content = await self._openai_service.get_response(messages)
+
+        # AIの応答をDBに保存
+        await self._message_repo.create(
+            conversation_id=conversation_id,
+            role="assistant",
+            content=content,
+        )
+
+        return content, conversation_id
 
     async def handle_stream(
-        self,
-        request: ChatRequest,
-    ) -> AsyncGenerator[str, None]:
-        """ストリーミングチャット処理"""
+        self, request: ChatRequest
+    ) -> tuple[AsyncGenerator[str, None], uuid.UUID]:
+        """ストリーミングチャット処理
+
+        Returns:
+            (ストリームジェネレーター, 会話ID) のタプル
+        """
+        conversation_id = await self._get_or_create_conversation(request)
+
+        # ユーザーメッセージをDBに保存
+        last_user_message = request.messages[-1]
+        await self._message_repo.create(
+            conversation_id=conversation_id,
+            role=last_user_message.role,
+            content=last_user_message.content,
+        )
+
         messages = [m.model_dump() for m in request.messages]
-        async for chunk in self._openai_service.get_response_stream(messages):
-            yield chunk
+
+        # ストリーム全体をキャプチャしてDBに保存するラッパー
+        async def stream_and_save() -> AsyncGenerator[str, None]:
+            full_content = ""
+            async for chunk in self._openai_service.get_response_stream(messages):
+                full_content += chunk
+                yield chunk
+
+            # ストリーム完了後にDBに保存
+            await self._message_repo.create(
+                conversation_id=conversation_id,
+                role="assistant",
+                content=full_content,
+            )
+
+        return stream_and_save(), conversation_id
+
+    async def _get_or_create_conversation(self, request: ChatRequest) -> uuid.UUID:
+        """既存の会話を取得するか、新しい会話を作成する"""
+        if request.conversation_id is not None:
+            conversation = await self._conversation_repo.get_by_id(
+                request.conversation_id
+            )
+            if conversation is not None:
+                return conversation.id
+
+        # 最初のメッセージの先頭30文字をタイトルにする
+        title = request.messages[0].content[:30] if request.messages else "新しい会話"
+        conversation = await self._conversation_repo.create(title=title)
+        return conversation.id

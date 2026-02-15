@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from src.routers import chat_route, health_route
+from src.routers import chat_route, conversation_route, health_route
 
 
 def setup_routers(app: FastAPI) -> None:
@@ -9,3 +9,4 @@ def setup_routers(app: FastAPI) -> None:
     """
     app.include_router(health_route.router)
     app.include_router(chat_route.router)
+    app.include_router(conversation_route.router)
