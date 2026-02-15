@@ -7,7 +7,6 @@ from src.setup.cors import setup_cors
 from src.setup.route import setup_routers
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリのライフサイクル管理
