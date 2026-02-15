@@ -1,3 +1,5 @@
+
+
 import ky from "ky";
 
 /**
@@ -11,7 +13,9 @@ import ky from "ky";
  * 共通設定（ベースURL、タイムアウト、認証ヘッダーなど）が
  * 全リクエストに自動で適用される。
  */
-export const apiClient = ky.create({
+export const
+ apiClient 
+ = ky.create({
   prefixUrl: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
 
   // タイムアウト：30秒（GPTの応答は時間がかかることがある）
@@ -52,9 +56,11 @@ export async function fetchStream(
 ): Promise<Response> {
   const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    method: "POST",
+  const response = await fetch(`${baseUrl}/${endpoint}`, {
+      method: "POST",
+
     headers: { "Content-Type": "application/json" },
+
     body: JSON.stringify(body),
   });
 

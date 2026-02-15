@@ -4,8 +4,8 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-width: 800px;
-  margin: 0 auto;
+  flex: 1; /* サイドバーの残りの幅を使う */
+  min-width: 0; /* flex子要素の縮小を許可する */
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
