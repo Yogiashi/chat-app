@@ -2,15 +2,12 @@
 name: CI
 
 # いつこのワークフローを実行するか
-on:
-  push:
-    branches: [main]           # mainブランチにpushされたとき
+on: # mainブランチにpushされたとき
   pull_request:
-    branches: [main]           # mainブランチへのPull Requestが作られたとき
+    branches: [main] # mainブランチへのPull Requestが作られたとき
 
 # 実行するジョブ（タスク）の定義
 jobs:
-
   # --- サーバー側のチェック ---
   server-check:
     # どの環境で実行するか
