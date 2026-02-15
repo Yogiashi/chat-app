@@ -9,8 +9,7 @@ RUN uv sync --frozen --no-dev
 
 COPY . .
 
-# start.sh に実行権限を付与
-RUN chmod +x start.sh
-
-# 起動スクリプト経由で起動（マイグレーション → サーバー起動）
-CMD ["./start.sh"]
+# 本番では --reload を外す
+# --workers：ワーカープロセス数。CPUコア数に合わせて並列処理する
+# Render の無料枠は1CPUなので2が適切
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
