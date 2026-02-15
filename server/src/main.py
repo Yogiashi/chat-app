@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+from src.setup.cors import setup_cors
+from src.setup.route import setup_routers
 
+app = FastAPI(
+    title="GPT Chat API",
+    description="GPTを使ったチャットアプリのバックエンドAPI",
+    version="0.1.0",
+)
 
-@app.get("/api/health")
-async def health_check():
-    """ヘルスチェック用エンドポイント
-    サーバーが正常に動いているか確認するためのもの。
-    インフラ側から「このサーバー生きてる？」と確認するのに使う。
-    """
-    return {"status": "ok"}
+setup_cors(app)
+setup_routers(app)
