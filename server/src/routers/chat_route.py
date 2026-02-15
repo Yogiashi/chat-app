@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.database import get_session
 from src.dependencies import get_chat_usecase
 from src.schemas.request.chat_request import ChatRequest
 from src.schemas.response.chat_response import ChatResponse
+from src.usecases.chat_usecase import ChatUsecase
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
@@ -13,26 +12,26 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 @router.post("", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
-    session: AsyncSession = Depends(get_session),
+    usecase: ChatUsecase = Depends(get_chat_usecase),
 ):
-    """通常のチャットエンドポイント"""
-    usecase = get_chat_usecase(session)
-    content, conversation_id = await usecase.handle(request)
-    return ChatResponse(content=content, conversation_id=conversation_id)
+    """通常のチャットエンドポイント
+
+    routerはusecaseだけに依存する。
+    serviceやclientの存在を知らない。
+    これにより、routerの責任が明確になる：
+    「リクエストを受け取って、usecaseに渡して、結果を返す」
+    """
+    content = await usecase.handle(request)
+    return ChatResponse(content=content)
 
 
 @router.post("/stream")
 async def chat_stream(
     request: ChatRequest,
-    session: AsyncSession = Depends(get_session),
+    usecase: ChatUsecase = Depends(get_chat_usecase),
 ):
     """ストリーミングチャットエンドポイント"""
-    usecase = get_chat_usecase(session)
-    stream, conversation_id = await usecase.handle_stream(request)
-
-    # conversation_id をヘッダーで返す（ストリーミング中はJSONを返せないため）
     return StreamingResponse(
-        stream,
+        usecase.handle_stream(request),
         media_type="text/event-stream",
-        headers={"X-Conversation-Id": str(conversation_id)},
     )
