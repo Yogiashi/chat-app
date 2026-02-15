@@ -1,25 +1,19 @@
-import { apiClient, fetchStream } from "../api/client";
+import { apiClient } from "../api/client";
+import { fetchStream } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
 import type { ChatRequest, ChatResponse, Message } from "../types/chat";
 
 /**
- * 通常のチャットAPI
+ * 通常のチャット（非ストリーミング）
  */
-export async function sendMessage(messages: Message[]): Promise<ChatResponse> {
-  const request: ChatRequest = { messages };
-
-  /**
-   * ky の使い方：
-   * apiClient.post(url, { json: data })
-   *
-   * fetch との比較：
-   *   fetch: body: JSON.stringify(data) + headers指定 + response.json()
-   *   ky:    json: data → 自動でJSON変換 + .json() で自動パース
-   *
-   * ただしここでは import を避けるため、
-   * 通常リクエストも fetchStream と同じく fetch ベースで統一することも可能。
-   * 今回は ky の使い方を学ぶために ky を使う。
-   */
+export async function sendMessage(
+  messages: Message[],
+  conversationId?: string,
+): Promise<ChatResponse> {
+  const request: ChatRequest = {
+    messages,
+    conversation_id: conversationId,
+  };
 
   return apiClient
     .post(ENDPOINTS.chat.send, { json: request })
@@ -27,15 +21,26 @@ export async function sendMessage(messages: Message[]): Promise<ChatResponse> {
 }
 
 /**
- * ストリーミングチャットAPI
+ * ストリーミングチャット
+ *
+ * レスポンスヘッダーから conversation_id を取得して返す。
+ * ストリーミング中はJSONを返せないので、
+ * バックエンドがヘッダーに conversation_id を入れている。
  */
 export async function sendMessageStream(
   messages: Message[],
   onChunk: (chunk: string) => void,
-): Promise<void> {
-  const request: ChatRequest = { messages };
+  conversationId?: string,
+): Promise<string> {
+  const request: ChatRequest = {
+    messages,
+    conversation_id: conversationId,
+  };
 
   const response = await fetchStream(ENDPOINTS.chat.stream, request);
+
+  // レスポンスヘッダーから conversation_id を取得
+  const newConversationId = response.headers.get("X-Conversation-Id") ?? "";
 
   const reader = response.body
     ?.pipeThrough(new TextDecoderStream())
@@ -52,4 +57,6 @@ export async function sendMessageStream(
       onChunk(value);
     }
   }
+
+  return newConversationId;
 }

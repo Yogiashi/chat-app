@@ -10,18 +10,34 @@ export type Message = {
   content: string;
 };
 
-/**
- * バックエンドに送るリクエストの型
- * POST /api/chat のリクエストボディに対応
- */
 export type ChatRequest = {
   messages: Message[];
+  conversation_id?: string;
 };
 
-/**
- * バックエンドから返ってくるレスポンスの型
- * POST /api/chat のレスポンスに対応
- */
 export type ChatResponse = {
   content: string;
+  conversation_id: string;
+};
+
+export type Conversation = {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ConversationDetail = {
+  id: string;
+  title: string;
+  messages: MessageResponse[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type MessageResponse = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  created_at: string;
 };
