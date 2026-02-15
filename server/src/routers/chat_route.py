@@ -6,7 +6,7 @@ from src.schemas.request.chat_request import ChatRequest
 from src.schemas.response.chat_response import ChatResponse
 from src.usecases.chat_usecase import ChatUsecase
 
-router = APIRouter(prefix="/api/chat", tags=["chat"])
+router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
 
 @router.post("", response_model=ChatResponse)
