@@ -14,6 +14,7 @@ async_session = async_sessionmaker(
     expire_on_commit=False,
 )
 
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """リクエストごとにDBセッションを提供する"""
     async with async_session() as session:

@@ -19,6 +19,9 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
         # Pythonが.pycファイル（キャッシュ）を作らないようにする
         # コンテナ内を綺麗に保つため
+    depends_on:
+      db:
+        condition: service_healthy 
 
   front:
     build:
@@ -32,3 +35,31 @@ services:
       - /app/node_modules
     depends_on:
       - server
+
+# --- データベース ---
+  db:
+    # PostgreSQL 16 の公式イメージ
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      # named volume：コンテナを削除してもデータが残る
+      # 匿名ボリュームと違い、名前がついているので管理しやすい
+      - db-data:/var/lib/postgresql/data
+    environment:
+      # PostgreSQLの初期設定。これらの値でDBが自動作成される
+      POSTGRES_USER: ${DB_USER:-chatapp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-chatapp}
+      POSTGRES_DB: ${DB_NAME:-chatapp}
+    # ヘルスチェック：DBが接続を受け付ける準備ができたか確認する
+    # pg_isready はPostgreSQL付属のコマンド
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-chatapp}"]
+      interval: 5s     # 5秒ごとにチェック
+      timeout: 5s      # 5秒以内に応答がなければ失敗
+      retries: 5       # 5回連続で失敗したらunhealthyとする
+
+# named volumes の定義
+# ここで宣言することで Docker が管理するボリュームになる
+volumes:
+  db-data:

@@ -105,6 +105,32 @@ lint:
 	@make lint-server
 	@make lint-front
 
+# --- データベース ---
+
+# マイグレーションを実行
+db-migrate:
+	docker compose exec server uv run alembic upgrade head
+
+# マイグレーションを1つ戻す
+db-downgrade:
+	docker compose exec server uv run alembic downgrade -1
+
+# マイグレーションファイルを生成（例: make db-revision m="create users table"）
+db-generate:
+	docker compose exec server uv run alembic revision --autogenerate -m "$(m)"
+
+# 現在のマイグレーション状態を確認
+db-current:
+	docker compose exec server uv run alembic current
+
+# マイグレーション履歴を表示
+db-history:
+	docker compose exec server uv run alembic history
+
+# DBに直接接続する
+db-shell:
+	docker compose exec db psql -U chatapp -d chatapp
+
 # --- ヘルプ ---
 
 # コマンド一覧を表示
@@ -128,3 +154,9 @@ help:
 	@echo "lint-front  - フロントコードをチェック"
 	@echo "clean       - 全コンテナ・ボリューム削除"
 	@echo "prune       - Docker不要データ掃除"
+	@echo "db-migrate   - マイグレーション実行"
+	@echo "db-downgrade - マイグレーションを1つ戻す"
+	@echo "db-generate  - マイグレーション生成 (m=メッセージ)"
+	@echo "db-current   - 現在のマイグレーション状態"
+	@echo "db-history   - マイグレーション履歴"
+	@echo "db-shell     - DBに接続"
