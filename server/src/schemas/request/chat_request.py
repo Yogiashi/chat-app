@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel
 
 
@@ -12,3 +13,4 @@ class ChatRequest(BaseModel):
     """チャットAPIへのリクエスト"""
 
     messages: list[Message]
+    conversation_id: uuid.UUID | None = None
