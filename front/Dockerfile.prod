@@ -1,0 +1,31 @@
+# --- ステージ1：ビルド ---
+# node でReactアプリをビルドして、HTML/CSS/JSファイルを生成する
+FROM node:20-slim AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# 本番用にビルド（TypeScript→JavaScript変換、最適化、バンドル）
+# ビルド結果は dist/ に出力される
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+RUN npm run build
+
+# --- ステージ2：配信 ---
+# nginx で静的ファイルを配信する
+# nginx はWebサーバー。Apache と並ぶ業界標準
+FROM nginx:alpine
+
+# ビルド結果を nginx の公開ディレクトリにコピー
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# nginx の設定ファイルをコピー
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

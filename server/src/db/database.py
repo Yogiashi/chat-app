@@ -5,7 +5,7 @@ from src.config import settings
 
 engine = create_async_engine(
     settings.database_url,
-    echo=True,
+    echo=not settings.is_production,
 )
 
 async_session = async_sessionmaker(

@@ -1,0 +1,15 @@
+FROM python:3.12-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+
+COPY . .
+
+# 本番では --reload を外す
+# --workers：ワーカープロセス数。CPUコア数に合わせて並列処理する
+# Render の無料枠は1CPUなので2が適切
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
