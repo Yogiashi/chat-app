@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     def allowed_origins_list(self) -> list[str]:
         """カンマ区切りの文字列をリストに変換する"""
         return [origin.strip() for origin in self.allowed_origins.split(",")]
-    
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
