@@ -88,3 +88,14 @@
 .message-input .textarea {
   flex: 1;
 }
+
+.chat-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-header-email {
+  font-size: 13px;
+  color: #888;
+}

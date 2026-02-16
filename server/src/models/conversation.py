@@ -24,6 +24,7 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     title: Mapped[str] = mapped_column(String(255), default="新しい会話")
+    user_uid: Mapped[str] = mapped_column(String(128), index=True)
 
     # リレーション：この会話に紐づくメッセージ一覧
     # back_populates：Message側からも conversation にアクセスできるようにする

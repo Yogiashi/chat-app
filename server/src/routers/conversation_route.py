@@ -2,7 +2,9 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 from src.db.database import get_session
+from src.dependencies.auth import get_current_user
 from src.repositories.conversation_repository import ConversationRepository
 from src.schemas.response.chat_response import (
     ConversationDetailResponse,
@@ -15,11 +17,11 @@ router = APIRouter(prefix="/api/v1/conversations", tags=["conversations"])
 
 @router.get("", response_model=list[ConversationResponse])
 async def get_conversations(
+    current_user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """会話一覧を取得する"""
     repo = ConversationRepository(session)
-    conversations = await repo.get_all()
+    conversations = await repo.get_all(current_user["uid"])
     return [
         ConversationResponse(
             id=c.id,
@@ -34,11 +36,11 @@ async def get_conversations(
 @router.get("/{conversation_id}", response_model=ConversationDetailResponse)
 async def get_conversation(
     conversation_id: uuid.UUID,
+    current_user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """会話の詳細（メッセージ一覧）を取得する"""
     repo = ConversationRepository(session)
-    conversation = await repo.get_by_id(conversation_id)
+    conversation = await repo.get_by_id(conversation_id, current_user["uid"])
 
     if conversation is None:
         raise HTTPException(status_code=404, detail="会話が見つかりません")
@@ -63,11 +65,11 @@ async def get_conversation(
 @router.delete("/{conversation_id}")
 async def delete_conversation(
     conversation_id: uuid.UUID,
+    current_user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """会話を削除する"""
     repo = ConversationRepository(session)
-    deleted = await repo.delete(conversation_id)
+    deleted = await repo.delete(conversation_id, current_user["uid"])
 
     if not deleted:
         raise HTTPException(status_code=404, detail="会話が見つかりません")

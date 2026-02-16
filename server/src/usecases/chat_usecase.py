@@ -10,12 +10,6 @@ from src.services.openai_service import OpenAIService
 
 
 class ChatUsecase:
-    """チャット機能のビジネスロジック
-
-    Phase 2 との違い：
-    - repository を受け取って、会話とメッセージをDBに保存する
-    - conversation_id で既存の会話に追加できる
-    """
 
     def __init__(
         self,
@@ -27,16 +21,13 @@ class ChatUsecase:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
 
-    async def handle(self, request: ChatRequest) -> tuple[str, uuid.UUID]:
-        """通常のチャット処理
+    async def handle(
+        self, request: ChatRequest, user_uid: str
+    ) -> tuple[str, uuid.UUID]:
+        conversation_id = await self._get_or_create_conversation(
+            request, user_uid
+        )
 
-        Returns:
-            (GPTの応答テキスト, 会話ID) のタプル
-        """
-        # 会話の取得 or 作成
-        conversation_id = await self._get_or_create_conversation(request)
-
-        # ユーザーメッセージをDBに保存
         last_user_message = request.messages[-1]
         await self._message_repo.create(
             conversation_id=conversation_id,
@@ -44,11 +35,9 @@ class ChatUsecase:
             content=last_user_message.content,
         )
 
-        # OpenAI APIに送信
         messages = [m.model_dump() for m in request.messages]
         content = await self._openai_service.get_response(messages)
 
-        # AIの応答をDBに保存
         await self._message_repo.create(
             conversation_id=conversation_id,
             role="assistant",
@@ -58,16 +47,12 @@ class ChatUsecase:
         return content, conversation_id
 
     async def handle_stream(
-        self, request: ChatRequest
-    ) -> tuple[AsyncGenerator[str, None], uuid.UUID]:
-        """ストリーミングチャット処理
+        self, request: ChatRequest, user_uid: str
+    ) -> tuple[AsyncGenerator[str, None], str]:
+        conversation_id = await self._get_or_create_conversation(
+            request, user_uid
+        )
 
-        Returns:
-            (ストリームジェネレーター, 会話ID) のタプル
-        """
-        conversation_id = await self._get_or_create_conversation(request)
-
-        # ユーザーメッセージをDBに保存
         last_user_message = request.messages[-1]
         await self._message_repo.create(
             conversation_id=conversation_id,
@@ -77,32 +62,36 @@ class ChatUsecase:
 
         messages = [m.model_dump() for m in request.messages]
 
-        # ストリーム全体をキャプチャしてDBに保存するラッパー
         async def stream_and_save() -> AsyncGenerator[str, None]:
             full_content = ""
-            async for chunk in self._openai_service.get_response_stream(messages):
+            async for chunk in self._openai_service.get_response_stream(
+                messages
+            ):
                 full_content += chunk
                 yield chunk
 
-            # ストリーム完了後にDBに保存
             await self._message_repo.create(
                 conversation_id=conversation_id,
                 role="assistant",
                 content=full_content,
             )
 
-        return stream_and_save(), conversation_id
+        return stream_and_save(), str(conversation_id)
 
-    async def _get_or_create_conversation(self, request: ChatRequest) -> uuid.UUID:
-        """既存の会話を取得するか、新しい会話を作成する"""
+    async def _get_or_create_conversation(
+        self, request: ChatRequest, user_uid: str
+    ) -> uuid.UUID:
         if request.conversation_id is not None:
             conversation = await self._conversation_repo.get_by_id(
-                request.conversation_id
+                request.conversation_id, user_uid
             )
             if conversation is not None:
                 return conversation.id
 
-        # 最初のメッセージの先頭30文字をタイトルにする
-        title = request.messages[0].content[:30] if request.messages else "新しい会話"
-        conversation = await self._conversation_repo.create(title=title)
+        title = (
+            request.messages[0].content[:30] if request.messages else "新しい会話"
+        )
+        conversation = await self._conversation_repo.create(
+            user_uid=user_uid, title=title
+        )
         return conversation.id
