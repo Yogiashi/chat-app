@@ -1,3 +1,5 @@
+import json
+import os
 import firebase_admin
 from firebase_admin import auth, credentials
 from fastapi import Depends, HTTPException, status
@@ -6,10 +8,20 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 # Firebase Admin SDK の初期化（アプリ全体で1回だけ）
 # _apps が空なら初期化する（二重初期化を防ぐ）
 if not firebase_admin._apps:
-    cred = credentials.ApplicationDefault()
+    # 本番：環境変数に JSON の中身が入っている
+    # ローカル：ファイルパスが GOOGLE_APPLICATION_CREDENTIALS に入っている
+    firebase_credentials_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+
+    if firebase_credentials_json:
+        # 本番：JSON 文字列からクレデンシャルを作成
+        cred_dict = json.loads(firebase_credentials_json)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        # ローカル：GOOGLE_APPLICATION_CREDENTIALS のファイルパスを使う
+        cred = credentials.ApplicationDefault()
+
     firebase_admin.initialize_app(cred)
 
-# Authorization ヘッダーから "Bearer xxx" のトークン部分を取り出す
 security = HTTPBearer()
 
 
