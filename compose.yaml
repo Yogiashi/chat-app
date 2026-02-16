@@ -17,6 +17,7 @@ services:
         # --reload と組み合わせて、保存するだけで再起動される
     environment:
       - PYTHONDONTWRITEBYTECODE=1
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
         # Pythonが.pycファイル（キャッシュ）を作らないようにする
         # コンテナ内を綺麗に保つため
     depends_on:
