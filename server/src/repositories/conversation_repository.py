@@ -9,7 +9,6 @@ from src.models.message import Message
 
 
 class ConversationRepository:
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -53,7 +52,6 @@ class ConversationRepository:
 
 
 class MessageRepository:
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

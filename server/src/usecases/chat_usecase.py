@@ -10,7 +10,6 @@ from src.services.openai_service import OpenAIService
 
 
 class ChatUsecase:
-
     def __init__(
         self,
         openai_service: OpenAIService,
@@ -24,9 +23,7 @@ class ChatUsecase:
     async def handle(
         self, request: ChatRequest, user_uid: str
     ) -> tuple[str, uuid.UUID]:
-        conversation_id = await self._get_or_create_conversation(
-            request, user_uid
-        )
+        conversation_id = await self._get_or_create_conversation(request, user_uid)
 
         last_user_message = request.messages[-1]
         await self._message_repo.create(
@@ -49,9 +46,7 @@ class ChatUsecase:
     async def handle_stream(
         self, request: ChatRequest, user_uid: str
     ) -> tuple[AsyncGenerator[str, None], str]:
-        conversation_id = await self._get_or_create_conversation(
-            request, user_uid
-        )
+        conversation_id = await self._get_or_create_conversation(request, user_uid)
 
         last_user_message = request.messages[-1]
         await self._message_repo.create(
@@ -64,9 +59,7 @@ class ChatUsecase:
 
         async def stream_and_save() -> AsyncGenerator[str, None]:
             full_content = ""
-            async for chunk in self._openai_service.get_response_stream(
-                messages
-            ):
+            async for chunk in self._openai_service.get_response_stream(messages):
                 full_content += chunk
                 yield chunk
 
@@ -88,9 +81,7 @@ class ChatUsecase:
             if conversation is not None:
                 return conversation.id
 
-        title = (
-            request.messages[0].content[:30] if request.messages else "新しい会話"
-        )
+        title = request.messages[0].content[:30] if request.messages else "新しい会話"
         conversation = await self._conversation_repo.create(
             user_uid=user_uid, title=title
         )

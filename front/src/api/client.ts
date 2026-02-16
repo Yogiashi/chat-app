@@ -36,7 +36,7 @@ export const apiClient = ky.create({
  */
 export async function fetchStream(
   endpoint: string,
-  body: unknown
+  body: unknown,
 ): Promise<Response> {
   const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;

@@ -74,11 +74,7 @@ export function AuthForm({ onLogin, onRegister }: Props) {
           {error && <p className="auth-error">{error}</p>}
 
           <BaseButton type="submit" disabled={isLoading}>
-            {isLoading
-              ? "処理中..."
-              : mode === "login"
-                ? "ログイン"
-                : "登録"}
+            {isLoading ? "処理中..." : mode === "login" ? "ログイン" : "登録"}
           </BaseButton>
         </form>
 

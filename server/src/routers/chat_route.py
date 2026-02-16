@@ -19,9 +19,7 @@ async def chat(
     session: AsyncSession = Depends(get_session),
 ):
     usecase = get_chat_usecase(session)
-    content, conversation_id = await usecase.handle(
-        request, current_user["uid"]
-    )
+    content, conversation_id = await usecase.handle(request, current_user["uid"])
     return ChatResponse(content=content, conversation_id=conversation_id)
 
 
@@ -32,9 +30,7 @@ async def chat_stream(
     session: AsyncSession = Depends(get_session),
 ):
     usecase = get_chat_usecase(session)
-    stream, conversation_id = await usecase.handle_stream(
-        request, current_user["uid"]
-    )
+    stream, conversation_id = await usecase.handle_stream(request, current_user["uid"])
     return StreamingResponse(
         stream,
         media_type="text/event-stream",
